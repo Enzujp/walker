@@ -1,0 +1,15 @@
+# Local build outputs
+/walker
+/bin/
+/dist/
+/coverage.out
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example

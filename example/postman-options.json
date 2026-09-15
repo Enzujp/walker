@@ -1,0 +1,7 @@
+{
+  "name": "Walker Demo",
+  "base_url": "http://localhost:8080",
+  "auth": {"type": "bearer", "token": "{{token}}"},
+  "variables": {"token": "", "request_id": "walker-demo"},
+  "group_by_path": false
+}

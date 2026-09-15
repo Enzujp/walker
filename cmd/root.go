@@ -1,23 +1,28 @@
+// Package cmd implements Walker's command-line interface.
 package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "autodoc",
-	Short: "Auto generate Open API specs for running your code",
-	Long:  "A tool that extracts routes and generates Postman/OpenAPI specs automatically.",
-	//Run: func(cmd *cobra.Command, args []string) {
-	//	fmt.Println("Use a subcommand like 'extract'")
-	//},
+// NewCommand creates an independent command tree, safe to use in tests.
+func NewCommand() *cobra.Command {
+	root := &cobra.Command{
+		Use:           "walker",
+		Short:         "Export HTTP routes as JSON or a Postman collection",
+		SilenceUsage:  true,
+		SilenceErrors: true,
+	}
+	root.AddCommand(newExtractCommand(), newDiffCommand())
+	return root
 }
 
 func Execute() {
-	if execErr := rootCmd.Execute(); execErr != nil {
-		fmt.Println(execErr)
-		os.Exit(1)
+	if err := NewCommand().Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, "walker:", err)
+		os.Exit(ExitCode(err))
 	}
 }

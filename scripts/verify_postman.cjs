@@ -1,0 +1,30 @@
+// Optional interoperability check. See docs/development.md for temporary dependencies.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const { Collection } = require('postman-collection');
+const Ajv = require('ajv-draft-04');
+
+const schemaPath = process.argv[2];
+if (!schemaPath) throw new Error('Usage: node scripts/verify_postman.cjs SCHEMA.json');
+const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+const data = JSON.parse(fs.readFileSync('example/collection.json', 'utf8'));
+const validate = new Ajv({ strict: false, allErrors: true }).compile(schema);
+assert.ok(validate(data), JSON.stringify(validate.errors));
+const collection = new Collection(data);
+const requests = [];
+collection.forEachItem(item => requests.push(item));
+assert.equal(requests.length, 6);
+assert.equal(collection.auth.type, 'bearer');
+assert.equal(collection.auth.parameters().get('token'), '{{token}}');
+const ada = requests.find(item => item.name.includes('Get a user / Ada'));
+const grace = requests.find(item => item.name.includes('Get a user / Grace'));
+assert.equal(ada.request.url.getPath(), '/users/42');
+assert.equal(grace.request.url.getPath(), '/users/84');
+const list = requests.find(item => item.name.includes('List users'));
+assert.equal(list.request.url.getQueryString(), 'limit=20');
+const health = requests.find(item => item.name.includes('Health check'));
+assert.equal(health.request.auth.type, 'noauth');
+const create = requests.find(item => item.name.includes('Create a user / Ada'));
+assert.equal(JSON.parse(create.request.body.raw).email, 'ada@example.com');
+assert.equal(create.request.headers.get('Content-Type'), 'application/json');
+console.log('Postman schema and SDK checks passed: folders, auth, paths, queries, bodies.');

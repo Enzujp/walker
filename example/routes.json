@@ -1,0 +1,86 @@
+[
+  {
+    "method": "GET",
+    "path": "/health",
+    "summary": "Health check",
+    "auth": {
+      "type": "noauth"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/users/",
+    "summary": "List users",
+    "group": "Users/Read",
+    "headers": [
+      {
+        "key": "Accept",
+        "value": "application/json"
+      }
+    ],
+    "query": [
+      {
+        "key": "limit",
+        "value": "20",
+        "description": "Page size"
+      },
+      {
+        "key": "cursor",
+        "value": "{{cursor}}",
+        "disabled": true
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/users/",
+    "summary": "Create a user",
+    "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
+    "group": "Users/Write",
+    "headers": [
+      {
+        "key": "X-Request-ID",
+        "value": "{{request_id}}"
+      }
+    ],
+    "examples": [
+      {
+        "name": "Ada",
+        "body": {
+          "name": "Ada",
+          "email": "ada@example.com"
+        }
+      },
+      {
+        "name": "Grace",
+        "body": {
+          "name": "Grace",
+          "email": "grace@example.com"
+        }
+      }
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/users/{userID}",
+    "summary": "Get a user",
+    "group": "Users/Read",
+    "path_params": {
+      "userID": "42"
+    },
+    "examples": [
+      {
+        "name": "Ada",
+        "path_params": {
+          "userID": "42"
+        }
+      },
+      {
+        "name": "Grace",
+        "path_params": {
+          "userID": "84"
+        }
+      }
+    ]
+  }
+]
