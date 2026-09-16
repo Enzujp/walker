@@ -168,6 +168,8 @@ make smoke
 
 Tests cover metadata validation and inheritance, nested routes, deterministic output, request variants, path handling, CLI streams, and process exit codes. CI runs formatting, static checks, race-enabled tests, build, and smoke checks. Development also includes a Postman schema/SDK compatibility check.
 
+To test a generated collection against a real local HTTP server, install Newman in a temporary directory as described in [development and verification](docs/development.md), then run `make live`. The integration test starts an in-process Chi API, exports the very router that serves it, and executes 15 generated requests against the loopback server. It checks successful responses, expected authentication and validation failures, path encoding, repeated query parameters, request headers, JSON bodies, named variants, and endpoint diffs. The server is ephemeral and no external network is contacted.
+
 See [development and verification](docs/development.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License

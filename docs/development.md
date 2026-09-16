@@ -11,6 +11,23 @@ make smoke
 
 `make check` checks Go formatting, runs `go vet`, and runs race-enabled tests. `make smoke` builds the binary and verifies the checked-in exports, stdin support, output streams, and actual process exit codes 0/1/2.
 
+## Live API integration test
+
+The tagged integration test in [`integration/live_api_test.go`](../integration/live_api_test.go) runs a real `httptest` HTTP server and executes the generated collection with Newman. It is intentionally separate from the default suite because Newman requires Node.js and adds a large temporary dependency tree.
+
+Install the tools outside this repository:
+
+```sh
+mkdir -p /tmp/walker-compat
+npm install --prefix /tmp/walker-compat --ignore-scripts --no-audit --no-fund \
+  --save-exact newman@6.2.1
+NODE_PATH=/tmp/walker-compat/node_modules make live
+```
+
+The test exports the same router instance that receives requests. Its handlers verify bearer, basic, and API-key authentication; request-local path values; URL encoding; repeated and disabled query parameters; content type; named request examples; an invalid request (`422`); and an unauthorized request (`401`). Newman reports each request's actual status and JSON response, which are compared with independent expectations. A passing run currently executes 15 generated requests in under a second after startup.
+
+The integration runner is [`scripts/run_live_collection.cjs`](../scripts/run_live_collection.cjs). It is a test helper, not a production server or runtime dependency of Walker. The generated collection is kept in memory because its `base_url` points to a random ephemeral server address; the stable route and metadata fixtures remain in [`example/router.go`](../example/router.go) and [`example/collection.json`](../example/collection.json).
+
 ## Refresh examples
 
 When intentionally changing the demo or output format:
