@@ -11,7 +11,7 @@
     "method": "GET",
     "path": "/users/",
     "summary": "List users",
-    "group": "Users/Read",
+    "group": "Users",
     "headers": [
       {
         "key": "Accept",
@@ -20,14 +20,14 @@
     ],
     "query": [
       {
-        "key": "limit",
-        "value": "20",
-        "description": "Page size"
-      },
-      {
         "key": "cursor",
         "value": "{{cursor}}",
         "disabled": true
+      },
+      {
+        "key": "limit",
+        "value": "20",
+        "description": "Page size"
       }
     ]
   },
@@ -36,10 +36,10 @@
     "path": "/users/",
     "summary": "Create a user",
     "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
-    "group": "Users/Write",
+    "group": "Users",
     "headers": [
       {
-        "key": "X-Request-ID",
+        "key": "X-Request-Id",
         "value": "{{request_id}}"
       }
     ],
@@ -64,7 +64,7 @@
     "method": "GET",
     "path": "/users/{userID}",
     "summary": "Get a user",
-    "group": "Users/Read",
+    "group": "Users",
     "path_params": {
       "userID": "42"
     },

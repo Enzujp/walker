@@ -8,168 +8,158 @@
       "name": "Users",
       "item": [
         {
-          "name": "Read",
-          "item": [
-            {
-              "name": "GET /users/ — List users",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/users/?limit=20",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "users",
-                    ""
-                  ],
-                  "query": [
-                    {
-                      "key": "cursor",
-                      "value": "{{cursor}}",
-                      "disabled": true
-                    },
-                    {
-                      "key": "limit",
-                      "value": "20",
-                      "description": "Page size"
-                    }
-                  ]
-                }
+          "name": "GET /users/ — List users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
               }
-            },
-            {
-              "name": "GET /users/{userID} — Get a user / Ada",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/users/:userID",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "users",
-                    ":userID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "userID",
-                      "value": "42",
-                      "type": "string"
-                    }
-                  ]
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/?limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "{{cursor}}",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Page size"
                 }
-              }
-            },
-            {
-              "name": "GET /users/{userID} — Get a user / Grace",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_url}}/users/:userID",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "users",
-                    ":userID"
-                  ],
-                  "variable": [
-                    {
-                      "key": "userID",
-                      "value": "84",
-                      "type": "string"
-                    }
-                  ]
-                }
-              }
+              ]
             }
-          ]
+          }
         },
         {
-          "name": "Write",
-          "item": [
-            {
-              "name": "POST /users/ — Create a user / Ada",
-              "request": {
-                "method": "POST",
-                "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "X-Request-Id",
-                    "value": "{{request_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/users/",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "users",
-                    ""
-                  ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Ada\",\n  \"email\": \"ada@example.com\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                }
+          "name": "POST /users/ — Create a user / Ada",
+          "request": {
+            "method": "POST",
+            "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-Id",
+                "value": "{{request_id}}"
               }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ""
+              ]
             },
-            {
-              "name": "POST /users/ — Create a user / Grace",
-              "request": {
-                "method": "POST",
-                "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "X-Request-Id",
-                    "value": "{{request_id}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/users/",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "users",
-                    ""
-                  ]
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"Grace\",\n  \"email\": \"grace@example.com\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ada\",\n  \"email\": \"ada@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
               }
             }
-          ]
+          }
+        },
+        {
+          "name": "POST /users/ — Create a user / Grace",
+          "request": {
+            "method": "POST",
+            "description": "Illustrative request bodies; the demo handler returns 204 and does not persist users.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Grace\",\n  \"email\": \"grace@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "GET /users/{userID} — Get a user / Ada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/:userID",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ":userID"
+              ],
+              "variable": [
+                {
+                  "key": "userID",
+                  "value": "42",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /users/{userID} — Get a user / Grace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/:userID",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ":userID"
+              ],
+              "variable": [
+                {
+                  "key": "userID",
+                  "value": "84",
+                  "type": "string"
+                }
+              ]
+            }
+          }
         }
       ]
     },

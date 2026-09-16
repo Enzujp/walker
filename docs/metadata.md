@@ -2,23 +2,40 @@
 
 Metadata is explicit. Walker discovers endpoint identities from Chi; it does not infer authentication, body types, or query parameters from arbitrary handlers.
 
-## Declare metadata
+## Register once
 
-`walker.Docs` has no constructor requirement. Call `Describe` beside route registration, then call `docs.Extract(router)` after all routes have been registered.
+`walker.Router` combines Chi registration and optional metadata, removing repeated method and path strings:
 
 ```go
-var docs walker.Docs
-docs.Describe("GET", "/api/users/{id}",
-    walker.Summary("Get a user"),
-    walker.Description("Returns the selected user."),
-    walker.Group("API/Users"),
-    walker.PathParam("id", "42"),
-)
+api := walker.NewRouter()
+api.Get("/health", healthHandler) // Zero Walker metadata.
+
+api.Route("/users", func(users *walker.Router) {
+    users.Get("/{id}", getUser, walker.PathValue("id", "42"))
+    users.Post("/", createUser, walker.Body(CreateUserRequest{
+        Name: "Ada", Email: "ada@example.com",
+    }))
+}, walker.Group("Users"))
+
+routes, err := api.Routes()
+collection, err := api.Postman(walker.Options{Name: "Users API"})
 ```
 
-Descriptions must use the full method/path, even when written inside `r.Route` or beside a mounted router. `/users` and `/users/` are different paths. HTTP methods are normalized to uppercase.
+The nested callback uses relative paths. Walker calculates full paths, so moving a route group does not leave separate metadata pointing at its old location. Group defaults apply to every route inside the callback. `Defaults(...)` creates another view over the same router with extra shared metadata:
 
-`Describe` retains the first error, including invalid metadata or duplicate declarations. `Extract` returns it before producing routes. Stale declarations list every unmatched endpoint in stable order. Undocumented routes remain in the export.
+```go
+admin := api.Defaults(walker.Group("Admin"), walker.Bearer("{{admin_token}}"))
+admin.Get("/admin/audit", auditHandler)
+admin.Get("/admin/users", usersHandler)
+```
+
+Route options override defaults. Headers merge by case-insensitive name, query values replace inherited values with the same key, path values merge by name, and route auth overrides default auth. Routes and groups retain the first setup error and return it from `Routes` or `Postman`.
+
+`NewRouter` implements `http.Handler` and supports normal methods, middleware, nested routes, and mounts. `Chi()` exposes the underlying `chi.Router` for less-common Chi features. Routes registered directly through `Chi()` are discovered but do not receive inline metadata.
+
+Use `walker.Wrap(existingChiRouter)` when the application already owns a router. Register new routes through the returned wrapper. The original `walker.Docs.Describe` API remains available for applications that cannot change registration calls; it requires fully qualified paths and checks stale declarations during extraction.
+
+`/users` and `/users/` remain distinct paths because Chi treats them as distinct.
 
 ## Available options
 
@@ -34,6 +51,8 @@ Descriptions must use the full method/path, even when written inside `r.Route` o
 | `Authentication(Auth{...})` | Route authentication override. |
 | `Examples(RequestVariant{...}, ...)` | Named request variants. |
 
+Concise aliases cover common declarations: `Body`, `PathValue`, `HeaderValue`, `QueryValue`, `Bearer`, `Basic`, `APIKey`, and `NoAuth`. The longer struct-based helpers remain useful when descriptions, disabled query values, or named variants are needed.
+
 Use `Route` directly when building a JSON manifest or when an application already has its own metadata registry.
 
 ## Authentication
@@ -41,11 +60,12 @@ Use `Route` directly when building a JSON manifest or when an application alread
 Authentication can be configured at the collection, route, or named-example level. A nil auth value inherits from its parent. An explicit `noauth` opts out, useful for login or health endpoints.
 
 ```go
-walker.Auth{Type: "bearer", Token: "{{token}}"}
-walker.Auth{Type: "basic", Username: "{{username}}", Password: "{{password}}"}
-walker.Auth{Type: "apikey", Key: "X-API-Key", Value: "{{api_key}}", In: "header"}
-walker.Auth{Type: "apikey", Key: "api_key", Value: "{{api_key}}", In: "query"}
-walker.Auth{Type: "noauth"}
+walker.Options{Auth: walker.BearerAuth("{{token}}")}
+walker.Options{Auth: walker.BasicAuth("{{username}}", "{{password}}")}
+walker.Options{Auth: walker.APIKeyAuth("X-API-Key", "{{api_key}}", "header")}
+
+api.Get("/public", publicHandler, walker.NoAuth())
+api.Get("/admin", adminHandler, walker.Bearer("{{admin_token}}"))
 ```
 
 Only fields relevant to the selected type are accepted. API keys require `in` to be `header` or `query`. Bearer auth requires a token expression; basic auth requires a username and permits an empty password.
@@ -91,7 +111,7 @@ References such as `{{token}}` found in exported requests or authentication crea
 ```go
 sample, err := walker.JSONExample(CreateUserRequest{})
 // Handle err, then attach the encoded JSON:
-docs.Describe("POST", "/users", walker.RequestExample(json.RawMessage(sample)))
+api.Post("/users", createUser, walker.Body(json.RawMessage(sample)))
 ```
 
 Field visibility, JSON tags, embedded fields, `omitempty`, and `,string` follow `encoding/json`. Recursive references terminate with zero values and recursion depth is bounded. Interfaces become null, maps are empty, and byte slices follow JSON's base64 representation. Custom marshalers operate on synthetic values. Unsupported types return errors.

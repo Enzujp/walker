@@ -23,16 +23,24 @@ type RouteOption func(*Route)
 // Errors are retained and returned by Extract, so setup calls need no error plumbing.
 // Describe never registers a route or invokes a handler.
 func (d *Docs) Describe(method, path string, options ...RouteOption) {
+	d.describeRoute(method, path, nil, options)
+}
+
+func (d *Docs) describeRoute(method, path string, defaults, options []RouteOption) {
 	if d.err != nil {
 		return
 	}
-	r := Route{Method: method, Path: path}
-	for _, option := range options {
-		if option == nil {
-			d.err = fmt.Errorf("%s %s: nil metadata option", method, path)
-			return
-		}
-		option(&r)
+	base := Route{Method: method, Path: path}
+	if !d.applyOptions(&base, defaults) {
+		return
+	}
+	override := Route{Method: method, Path: path}
+	if !d.applyOptions(&override, options) {
+		return
+	}
+	r := override
+	if len(defaults) > 0 {
+		r = mergeRouteMetadata(base, override)
 	}
 	routes, err := Normalize([]Route{r})
 	if err != nil {
@@ -49,6 +57,23 @@ func (d *Docs) Describe(method, path string, options ...RouteOption) {
 		return
 	}
 	d.routes[key] = r
+}
+
+func (d *Docs) applyOptions(route *Route, options []RouteOption) bool {
+	for _, option := range options {
+		if option == nil {
+			d.setError(fmt.Errorf("%s %s: nil metadata option", route.Method, route.Path))
+			return false
+		}
+		option(route)
+	}
+	return true
+}
+
+func (d *Docs) setError(err error) {
+	if d != nil && d.err == nil {
+		d.err = err
+	}
 }
 
 // Extract discovers the router's actual routes and attaches matching declarations.
@@ -112,4 +137,91 @@ func Authentication(auth Auth) RouteOption { return func(r *Route) { r.Auth = cl
 // the route metadata supplies their shared defaults.
 func Examples(values ...RequestVariant) RouteOption {
 	return func(r *Route) { r.Examples = append(r.Examples, values...) }
+}
+
+// Body is a concise alias for RequestExample.
+func Body(value any) RouteOption { return RequestExample(value) }
+
+// PathValue is a concise alias for PathParam.
+func PathValue(name, value string) RouteOption { return PathParam(name, value) }
+
+// HeaderValue adds one request header without constructing a Header value.
+func HeaderValue(key, value string) RouteOption {
+	return Headers(Header{Key: key, Value: value})
+}
+
+// QueryValue adds one enabled query parameter without constructing a QueryParam value.
+func QueryValue(key, value string) RouteOption {
+	return Query(QueryParam{Key: key, Value: value})
+}
+
+// Bearer uses Postman's bearer auth helper for this route or group.
+func Bearer(token string) RouteOption {
+	return Authentication(*BearerAuth(token))
+}
+
+// Basic uses Postman's basic auth helper for this route or group.
+func Basic(username, password string) RouteOption {
+	return Authentication(*BasicAuth(username, password))
+}
+
+// APIKey uses Postman's API-key helper. Location must be "header" or "query".
+func APIKey(key, value, location string) RouteOption {
+	return Authentication(*APIKeyAuth(key, value, location))
+}
+
+// NoAuth prevents this route or group from inheriting collection authentication.
+func NoAuth() RouteOption { return Authentication(Auth{Type: "noauth"}) }
+
+// BearerAuth constructs collection-level bearer authentication.
+func BearerAuth(token string) *Auth { return &Auth{Type: "bearer", Token: token} }
+
+// BasicAuth constructs collection-level basic authentication.
+func BasicAuth(username, password string) *Auth {
+	return &Auth{Type: "basic", Username: username, Password: password}
+}
+
+// APIKeyAuth constructs collection-level API-key authentication.
+// Location must be "header" or "query".
+func APIKeyAuth(key, value, location string) *Auth {
+	return &Auth{Type: "apikey", Key: key, Value: value, In: location}
+}
+
+func mergeRouteMetadata(base, override Route) Route {
+	result := cloneRoute(base)
+	if override.Summary != "" {
+		result.Summary = override.Summary
+	}
+	if override.Description != "" {
+		result.Description = override.Description
+	}
+	if override.Group != "" {
+		result.Group = override.Group
+	}
+	if override.Body != nil {
+		result.Body = override.Body
+	}
+	if len(result.Headers) > 0 || len(override.Headers) > 0 {
+		result.Headers = mergeHeaders(result.Headers, override.Headers)
+	}
+	if len(result.Query) > 0 || len(override.Query) > 0 {
+		result.Query = mergeQuery(result.Query, override.Query)
+	}
+	if len(override.PathParams) > 0 {
+		if result.PathParams == nil {
+			result.PathParams = map[string]string{}
+		}
+		for name, value := range override.PathParams {
+			result.PathParams[name] = value
+		}
+	}
+	if override.Auth != nil {
+		result.Auth = cloneAuth(override.Auth)
+	}
+	if len(override.Examples) > 0 {
+		result.Examples = append([]RequestVariant(nil), override.Examples...)
+	}
+	result.Method = override.Method
+	result.Path = override.Path
+	return result
 }

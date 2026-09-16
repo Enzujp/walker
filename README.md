@@ -32,9 +32,9 @@ You can also import the checked-in [demo collection](example/collection.json).
 
 After this version is published, install the CLI with `go install github.com/enzujp/walker@latest`.
 
-## Integrate beside your routes
+## Minimal integration
 
-Use `walker.Docs` to attach metadata without replacing Chi or changing handler signatures. Its zero value is ready to use.
+Use `walker.NewRouter` as a thin Chi wrapper. Register each handler once; metadata is optional and sits on the same call. Routes without options are still discovered and exported.
 
 ```go
 package main
@@ -45,43 +45,31 @@ import (
     "os"
 
     "github.com/enzujp/walker/pkg/walker"
-    "github.com/go-chi/chi/v5"
 )
 
 func main() {
-    router := chi.NewRouter()
-    var docs walker.Docs
+    api := walker.NewRouter()
 
-    router.Get("/users/{id}", func(http.ResponseWriter, *http.Request) {})
-    docs.Describe("GET", "/users/{id}",
-        walker.Summary("Get a user"),
-        walker.Group("Users/Read"),
-        walker.PathParam("id", "42"),
-        walker.Query(walker.QueryParam{Key: "expand", Value: "profile"}),
-        walker.Headers(walker.Header{Key: "Accept", Value: "application/json"}),
-    )
+    // No metadata is required for ordinary routes.
+    api.Get("/health", func(http.ResponseWriter, *http.Request) {})
 
-    router.Post("/users", func(http.ResponseWriter, *http.Request) {})
-    docs.Describe("POST", "/users",
-        walker.Summary("Create a user"),
-        walker.Group("Users/Write"),
-        walker.Examples(
-            walker.RequestVariant{Name: "Ada", Body: map[string]string{
+    // The group is declared once and inherited by its routes.
+    api.Route("/users", func(users *walker.Router) {
+        users.Get("/{id}", func(http.ResponseWriter, *http.Request) {},
+            walker.PathValue("id", "42"),
+        )
+        users.Post("/", func(http.ResponseWriter, *http.Request) {},
+            walker.Body(map[string]string{
                 "name": "Ada", "email": "ada@example.com",
-            }},
-            walker.RequestVariant{Name: "Grace", Body: map[string]string{
-                "name": "Grace", "email": "grace@example.com",
-            }},
-        ),
-    )
+            }),
+        )
+    }, walker.Group("Users"))
 
-    routes, err := docs.Extract(router)
-    if err != nil {
-        log.Fatal(err)
-    }
-    collection, err := walker.Postman(routes, walker.Options{
+    // Extract and generate in one call. Collection auth applies everywhere;
+    // use walker.NoAuth() only on public routes that need to opt out.
+    collection, err := api.Postman(walker.Options{
         Name: "Users API",
-        Auth: &walker.Auth{Type: "bearer", Token: "{{token}}"},
+        Auth: walker.BearerAuth("{{token}}"),
     })
     if err != nil {
         log.Fatal(err)
@@ -92,9 +80,9 @@ func main() {
 }
 ```
 
-`Describe` retains setup errors and returns them from `docs.Extract`. Declare each method/path once and use the **full path**, including mounted prefixes and trailing slashes. Routes without metadata are still exported. Metadata referring to an unregistered route is an error.
+The wrapper also provides `Post`, `Put`, `Patch`, `Delete`, `Head`, `Options`, `Connect`, `Trace`, `Method`, middleware, nested routes, and mounts. It implements `http.Handler`, so it can be passed directly to `http.Server`, `httptest.NewServer`, or `http.ListenAndServe`.
 
-For discovery without metadata, `walker.Extract(router)` remains available. See the [working demo router](example/router.go) and [metadata reference](docs/metadata.md).
+For an existing router, use `walker.Wrap(router)`. For integrations that cannot register through the wrapper, `walker.Extract(router)` and the original `walker.Docs` API remain available. See the [working demo router](example/router.go) and [metadata reference](docs/metadata.md).
 
 ## Export from the CLI
 
@@ -149,7 +137,7 @@ See [the CI guide](docs/ci.md) for generating snapshots from your application an
 
 Walker separates router discovery, metadata validation, example generation, Postman serialization, and endpoint comparison. There is no mutable global route registry. Metadata containers are copied; arbitrary body values remain caller-owned.
 
-- Chi v5 is supported. Construct the router fully before extraction. Do not mutate the router, `Docs`, or body values concurrently with export.
+- Chi v5 is supported. Construct the router fully before extraction. Do not mutate the router, Walker registration types, or body values concurrently with export.
 - Chi retains route patterns and handlers, not request types. Authentication and request metadata must be supplied explicitly.
 - Postman collections and JSON manifests are supported. OpenAPI, response schemas, automatic auth discovery, and handler execution are outside the current scope.
 - `{id}` and `{id:regex}` are converted to Postman parameters; regex constraints are discarded. Missing path examples use `example`. Wildcards require manual replacement.
